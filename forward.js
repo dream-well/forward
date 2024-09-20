@@ -89,9 +89,9 @@ async function chat_completions(req, res, type) {
       
         // Close the stream when the stream ends
         stream.data.on('end', () => {
-            res.end();
+            // res.end();
             const period = new Date().getTime() - startAt
-            console.log(`tps: ${tokens / period * 1000}, tokens: ${tokens}, period: ${period/1000}`)
+            console.log(`tps: ${tokens / period * 1000}, tokens: ${tokens}, period: ${period/1000}, query: ${query}`)
         });
     } catch (error) {
         console.error(error)
