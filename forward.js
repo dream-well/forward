@@ -113,6 +113,10 @@ app.post('/v1/completions', async (req, res) => {
     await chat_completions(req, res, "completions")
 });
 
+app.get('/health', (req, res) => {
+    res.status(200).send('Healthy')
+});
+
 // Start the Express server
 app.listen(8000, () => {
   console.log('Server started on port:', ansiColors.green(8000));
