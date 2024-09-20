@@ -23,6 +23,8 @@ const servers = {
 const region = process.env.REGION
 const server = servers[region]
 
+console.log('Server IP:', server);
+
 const port = 8000
 const datas = []
 
