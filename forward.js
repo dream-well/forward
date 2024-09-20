@@ -49,14 +49,6 @@ async function chat_completions(req, res, type) {
         const stream = await cache.get(query)
         res.writeHead(stream.status, stream.headers);
         stream.data.pipe(res)
-        // stream.data.on('data', () => {
-        //     tokens += 1
-        // })
-        // stream.data.on('end', () => {
-        //     res.end()
-        //     const period = new Date().getTime() - startAt
-        //     console.log(ansiColors.blue(`tps: ${tokens / period * 1000}, tokens: ${tokens}, period: ${period/1000}`))
-        // })
         return
     }
     console.info(`==> ${type} ${requestId ++} / ${(new Date().getTime() - startProccessAt) / 1000}s:`, query);
