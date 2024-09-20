@@ -71,10 +71,10 @@ async function chat_completions(req, res, type) {
         datas.push({
             type, data
         })
-        setTimeout(() => {
-            fs.writeFileSync('data.json', JSON.stringify(datas, null, 2))
-        }, 0)
         cache.set(query, promise)
+        setTimeout(() => {
+            cache.delete(query)
+        }, 60000)
         stream = await promise
         stream.data.setMaxListeners(100)
         res.writeHead(stream.status, stream.headers);
