@@ -26,10 +26,127 @@ const server = servers[region]
 console.log('Server IP:', server);
 
 const port = 8000
-const datas = []
 
 var requestId = 0
 const startProccessAt = new Date().getTime()
+
+
+function convert_to_stream(request_type, output_sequence) {
+    let text_offset = 0
+    const id = generateId()
+    const stream = []
+    if( request_type == "CHAT") {
+        const stream_data = {
+            "id": id, 
+            "object":"chat.completion.chunk",
+            "created":Math.floor((new Date()).getTime()/1000),
+            "model":"NousResearch/Meta-Llama-3.1-8B-Instruct",
+            "choices":[{"index":0,"delta":{"role":"assistant"},
+            "logprobs":null,
+            "finish_reason":null}]
+        }
+        const data_to_send = `data: ${JSON.stringify(stream_data)}\n\n`
+        const buffer = Buffer.from(data_to_send, 'utf-8')
+        stream.push(buffer)
+    }
+    for (let i = 0; i < output_sequence.length; i++) {
+        const stream_data = {
+            id: id,
+            object: request_type == "CHAT" ? "chat.completion.chunk": "text_completion",
+            created: Math.floor((new Date()).getTime()/1000),
+            model: "NousResearch/Meta-Llama-3.1-8B-Instruct",
+            choices: [{
+                index: 0,
+                text: output_sequence[i].text,
+                finish_reason: i == output_sequence.length - 1 ? 'stop' : null,
+                stop_reason: null,
+                powv: output_sequence[i].powv,
+                token_ids: [output_sequence[i].token_id],
+                logprobs: {
+                    text_offset,
+                    token_logprobs: [output_sequence[i].logprob],
+                    tokens: [output_sequence[i].text],
+                    top_logprobs: {[output_sequence[i].text]: output_sequence[i].logprob}
+                }
+            }]
+        }
+        if( request_type == "CHAT") {
+            stream_data.choices[0].delta = {
+                content: output_sequence[i].text,
+            }
+            stream_data.choices[0].logprobs['content'] = [{
+                "token": output_sequence[i].text,
+                "logprob": output_sequence[i].logprob,
+            }]
+        }
+        const data_to_send = `data: ${JSON.stringify(stream_data)}\n\n`
+        const buffer = Buffer.from(data_to_send, 'utf-8')
+        stream.push(buffer)
+        text_offset += output_sequence[i].text.length
+    }
+    stream.push(Buffer.from("data: [DONE]\n\n", 'utf-8'))
+    return stream
+}
+
+async function get_stream_response(request_type, data) {
+    const response = await axios.post(
+        `http://${server}:${port}/v1/` + (type == "chat" ? "chat/completions" : "completions"),
+        data,
+        { 
+            headers: {
+                'Content-Type': 'application/json'
+            },
+        }
+    )
+    output_sequence = response.data
+    return convert_to_stream(request_type, output_sequence)
+}
+
+async function stream_completions(req, res, type) {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    data = req.body
+    let query = "";
+    if(type == "chat") {
+        query = data.messages[1]['content'].slice(14)
+    }
+    else {
+        let query_index = data.prompt.indexOf('Search query: ')
+        query = data.prompt.slice(query_index + 14)
+    }
+    let startAt = new Date().getTime()
+    if (cache.has(query)) {
+        console.info(ansiColors.blue(`✓ Cache hit! ${query}`))
+        const stream = await cache.get(query)
+        for (let i = 0; i < stream.length; i++) {
+            res.write(stream[i])
+        }
+        res.end()
+        return
+    }
+    console.info(`==> ${type} ${requestId ++} / ${(new Date().getTime() - startProccessAt) / 1000}s:`, query);
+    const clientIp = req.socket.remoteAddress;
+    const ip4 = clientIp.split(":").pop();
+    console.info(ansiColors.green(`IP: ${ip4}, Headers: ${JSON.stringify(req.headers["epistula-signed-by"], null, 2)}`));
+    try {
+        promise = get_stream_response(type, data)
+        cache.set(query, promise)
+        setTimeout(() => {
+            cache.delete(query)
+        }, 60000)
+        stream = await promise
+        for (let i = 0; i < stream.length; i++) {
+            res.write(stream[i])
+        }
+        res.end()
+        const period = new Date().getTime() - startAt
+        const tokens = stream.length
+        console.log(`tps: ${tokens / period * 1000}, tokens: ${tokens}, period: ${period/1000}, query: ${query}`)
+    } catch (error) {
+        console.error(error)
+    }
+}
 
 async function chat_completions(req, res, type) {
     res.setHeader('Content-Type', 'text/event-stream');
@@ -68,9 +185,6 @@ async function chat_completions(req, res, type) {
                 responseType: 'stream'
             }
         )
-        datas.push({
-            type, data
-        })
         cache.set(query, promise)
         setTimeout(() => {
             cache.delete(query)
@@ -108,10 +222,18 @@ app.use((req, res, next) => {
 })
 
 app.post('/v1/chat/completions', async (req, res) => {
-    await chat_completions(req, res, "chat")
+    await stream_completions(req, res, "chat")
 });
 
 app.post('/v1/completions', async (req, res) => {
+    await stream_completions(req, res, "completions")
+});
+
+app.post('/v2/chat/completions', async (req, res) => {
+    await chat_completions(req, res, "chat")
+});
+
+app.post('/v2/completions', async (req, res) => {
     await chat_completions(req, res, "completions")
 });
 
