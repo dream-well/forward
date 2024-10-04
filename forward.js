@@ -59,8 +59,8 @@ function convert_to_stream(request_type, output_sequence) {
         const stream_data = {
             id: id,
             object: request_type == "CHAT" ? "chat.completion.chunk": "text_completion",
-            created: Math.floor((new Date()).getTime()/1000),
-            model: "NousResearch/Meta-Llama-3.1-8B-Instruct",
+            // created: Math.floor((new Date()).getTime()/1000),
+            // model: "NousResearch/Meta-Llama-3.1-8B-Instruct",
             choices: [{
                 index: 0,
                 text: output_sequence[i].text,
