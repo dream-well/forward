@@ -90,7 +90,7 @@ function convert_to_stream(request_type, output_sequence) {
         text_offset += output_sequence[i].text.length
     }
     stream.push(Buffer.from("data: [DONE]\n\n", 'utf-8'))
-    console.log('Stream:', stream.slice(stream.length - 3))
+    console.log('Stream:', stream.slice(stream.length - 3).map(buf => buf.toString('utf-8')))
     return stream
 }
 
