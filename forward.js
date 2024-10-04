@@ -2,8 +2,8 @@ const express = require('express');
 const axios = require('axios').default;
 const app = express();
 const ansiColors = require('ansi-colors');
-const fs = require('fs');
 const dotenv = require('dotenv');
+const crypto = require('crypto');
 
 dotenv.config()
 
@@ -30,6 +30,11 @@ const port = 8000
 var requestId = 0
 const startProccessAt = new Date().getTime()
 
+function generateId(request_type) {
+    const prefix = request_type == 'CHAT' ? 'chat-' : 'cmpl-';
+    const id = crypto.randomBytes(16).toString('hex'); // Generates a 32-character hexadecimal string
+    return prefix + id;
+}
 
 function convert_to_stream(request_type, output_sequence) {
     let text_offset = 0
