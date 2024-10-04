@@ -141,13 +141,15 @@ async function stream_completions(req, res, type) {
             cache.delete(query)
         }, 60000)
         stream = await promise
+        const send_at = new Date().getTime()
         for (let i = 0; i < stream.length; i++) {
             res.write(stream[i])
         }
         res.end()
         const period = new Date().getTime() - startAt
         const tokens = stream.length
-        console.log(`tps: ${tokens / period * 1000}, tokens: ${tokens}, period: ${period/1000}, query: ${query}`)
+        const send_period = new Date().getTime() - send_at
+        console.log(`tps: ${tokens / period * 1000}, tokens: ${tokens}, period: ${period/1000}, query: ${query}, sent in ${send_period/1000} s`)
     } catch (error) {
         console.error(error)
     }
