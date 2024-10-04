@@ -96,7 +96,7 @@ function convert_to_stream(request_type, output_sequence) {
 
 async function get_stream_response(request_type, data) {
     const response = await axios.post(
-        `http://${server}:${port}/v2/` + (request_type == "chat" ? "chat/completions" : "completions"),
+        `http://${server}:${port}/v2/` + (request_type == "CHAT" ? "chat/completions" : "COMPLETIONS"),
         data,
         { 
             headers: {
@@ -115,7 +115,7 @@ async function stream_completions(req, res, type) {
     res.setHeader('Connection', 'keep-alive');
     data = req.body
     let query = "";
-    if(type == "chat") {
+    if(type == "CHAT") {
         query = data.messages[1]['content'].slice(14)
     }
     else {
@@ -163,7 +163,7 @@ async function chat_completions(req, res, type) {
     res.setHeader('Connection', 'keep-alive');
     data = req.body
     let query = "";
-    if(type == "chat") {
+    if(type == "CHAT") {
         query = data.messages[1]['content'].slice(14)
     }
     else {
@@ -185,7 +185,7 @@ async function chat_completions(req, res, type) {
     console.info(ansiColors.green(`IP: ${ip4}, Headers: ${JSON.stringify(req.headers["epistula-signed-by"], null, 2)}`));
     try {
         promise = axios.post(
-            `http://${server}:${port}/v1/` + (type == "chat" ? "chat/completions" : "completions"),
+            `http://${server}:${port}/v1/` + (type == "CHAT" ? "chat/completions" : "COMPLETIONS"),
             data,
             { 
                 headers: {
@@ -231,19 +231,19 @@ app.use((req, res, next) => {
 })
 
 app.post('/v1/chat/completions', async (req, res) => {
-    await stream_completions(req, res, "chat")
+    await stream_completions(req, res, "CHAT")
 });
 
 app.post('/v1/completions', async (req, res) => {
-    await stream_completions(req, res, "completions")
+    await stream_completions(req, res, "COMPLETIONS")
 });
 
 app.post('/v2/chat/completions', async (req, res) => {
-    await chat_completions(req, res, "chat")
+    await chat_completions(req, res, "CHAT")
 });
 
 app.post('/v2/completions', async (req, res) => {
-    await chat_completions(req, res, "completions")
+    await chat_completions(req, res, "COMPLETIONS")
 });
 
 app.get('/health', (req, res) => {
