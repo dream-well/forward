@@ -108,7 +108,7 @@ async function get_stream_response(request_type, data) {
     return convert_to_stream(request_type, output_sequence)
 }
 
-async function stream_completions(req, res, type, version = 1) {
+async function stream_completions(req, res, type, version = 2) {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
