@@ -109,7 +109,7 @@ async function get_stream_response(request_type, data) {
     return convert_to_stream(request_type, output_sequence)
 }
 
-async function stream_completions(req, res, type) {
+async function stream_completions(req, res, type, version = 1) {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
@@ -144,8 +144,19 @@ async function stream_completions(req, res, type) {
         }, 60000)
         stream = await promise
         const send_at = new Date().getTime()
-        for (let i = 0; i < stream.length; i++) {
-            res.write(stream[i])
+        if (version == 1) {
+            for (let i = 0; i < stream.length; i++) {
+                res.write(stream[i])
+            }
+        }
+        if (version == 2) {
+            for (let i = 0; i < stream.length; i+= 2) {
+                let data_to_send = stream[i]
+                if(i + 1 < stream.length) {
+                    data_to_send += stream[i + 1]
+                }
+                res.write(data_to_send)
+            }
         }
         res.end()
         const period = new Date().getTime() - startAt
@@ -239,11 +250,11 @@ app.post('/v1/completions', async (req, res) => {
 });
 
 app.post('/v2/chat/completions', async (req, res) => {
-    await chat_completions(req, res, "CHAT")
+    await stream_completions(req, res, "CHAT", 2)
 });
 
 app.post('/v2/completions', async (req, res) => {
-    await chat_completions(req, res, "COMPLETIONS")
+    await stream_completions(req, res, "COMPLETIONS")
 });
 
 app.get('/health', (req, res) => {
