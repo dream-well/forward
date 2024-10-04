@@ -90,7 +90,7 @@ function convert_to_stream(request_type, output_sequence) {
 
 async function get_stream_response(request_type, data) {
     const response = await axios.post(
-        `http://${server}:${port}/v2/` + (type == "chat" ? "chat/completions" : "completions"),
+        `http://${server}:${port}/v2/` + (request_type == "chat" ? "chat/completions" : "completions"),
         data,
         { 
             headers: {
