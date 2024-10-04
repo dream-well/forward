@@ -90,6 +90,7 @@ function convert_to_stream(request_type, output_sequence) {
         text_offset += output_sequence[i].text.length
     }
     stream.push(Buffer.from("data: [DONE]\n\n", 'utf-8'))
+    console.log('Stream:', stream.slice(stream.length - 3))
     return stream
 }
 
@@ -104,6 +105,7 @@ async function get_stream_response(request_type, data) {
         }
     )
     output_sequence = response.data
+    console.log(output_sequence.slice(0, 3))
     return convert_to_stream(request_type, output_sequence)
 }
 
