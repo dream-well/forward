@@ -150,13 +150,11 @@ async function stream_completions(req, res, type, version = 1) {
             }
         }
         if (version == 2) {
-            for (let i = 0; i < stream.length; i+= 2) {
-                let data_to_send = stream[i]
-                if(i + 1 < stream.length) {
-                    data_to_send += stream[i + 1]
-                }
-                res.write(data_to_send)
-            }
+            console.log("Version 2")
+            data_to_send_1 = stream.slice(0, Math.floor(stream.length / 2))
+            data_to_send_2 = stream.slice(Math.floor(stream.length / 2))
+            res.write(data_to_send_1.reduce((a,b) => a+b))
+            res.write(data_to_send_2.reduce((a,b) => a+b))
         }
         res.end()
         const period = new Date().getTime() - startAt
