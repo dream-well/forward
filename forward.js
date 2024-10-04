@@ -46,9 +46,10 @@ function convert_to_stream(request_type, output_sequence) {
             "object":"chat.completion.chunk",
             "created":Math.floor((new Date()).getTime()/1000),
             "model":"NousResearch/Meta-Llama-3.1-8B-Instruct",
-            "choices":[{"index":0,"delta":{"role":"assistant"},
-            "logprobs":null,
-            "finish_reason":null}]
+            "choices":[{
+                "index":0,
+                "delta":{"role":"assistant"},
+            }]
         }
         const data_to_send = `data: ${JSON.stringify(stream_data)}\n\n`
         const buffer = Buffer.from(data_to_send, 'utf-8')
@@ -63,8 +64,6 @@ function convert_to_stream(request_type, output_sequence) {
             choices: [{
                 index: 0,
                 text: output_sequence[i].text,
-                finish_reason: i == output_sequence.length - 1 ? 'stop' : null,
-                stop_reason: null,
                 powv: output_sequence[i].powv,
                 token_ids: [output_sequence[i].token_id],
                 logprobs: {
@@ -126,8 +125,14 @@ async function stream_completions(req, res, type, version = 1) {
     if (cache.has(query)) {
         console.info(ansiColors.blue(`✓ Cache hit! ${query}`))
         const stream = await cache.get(query)
-        for (let i = 0; i < stream.length; i++) {
-            res.write(stream[i])
+        if (version == 1) {
+            for (let i = 0; i < stream.length; i++) {
+                res.write(stream[i])
+            }
+        }
+        if (version == 2) {
+            console.log("Version 2")
+            res.write(stream.reduce((a,b) => a+b))
         }
         res.end()
         return
@@ -151,80 +156,13 @@ async function stream_completions(req, res, type, version = 1) {
         }
         if (version == 2) {
             console.log("Version 2")
-            data_to_send_1 = stream.slice(0, Math.floor(stream.length / 2))
-            data_to_send_2 = stream.slice(Math.floor(stream.length / 2))
-            res.write(data_to_send_1.reduce((a,b) => a+b))
-            res.write(data_to_send_2.reduce((a,b) => a+b))
+            res.write(stream.reduce((a,b) => a+b))
         }
         res.end()
         const period = new Date().getTime() - startAt
         const tokens = stream.length
         const send_period = new Date().getTime() - send_at
         console.log(`tps: ${tokens / period * 1000}, tokens: ${tokens}, period: ${period/1000}, query: ${query}, sent in ${send_period/1000} s`)
-    } catch (error) {
-        console.error(error)
-    }
-}
-
-async function chat_completions(req, res, type) {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    data = req.body
-    let query = "";
-    if(type == "CHAT") {
-        query = data.messages[1]['content'].slice(14)
-    }
-    else {
-        let query_index = data.prompt.indexOf('Search query: ')
-        query = data.prompt.slice(query_index + 14)
-    }
-    let tokens = 0
-    let startAt = new Date().getTime()
-    if (cache.has(query)) {
-        console.info(ansiColors.blue(`✓ Cache hit! ${query}`))
-        const stream = await cache.get(query)
-        res.writeHead(stream.status, stream.headers);
-        stream.data.pipe(res)
-        return
-    }
-    console.info(`==> ${type} ${requestId ++} / ${(new Date().getTime() - startProccessAt) / 1000}s:`, query);
-    const clientIp = req.socket.remoteAddress;
-    const ip4 = clientIp.split(":").pop();
-    console.info(ansiColors.green(`IP: ${ip4}, Headers: ${JSON.stringify(req.headers["epistula-signed-by"], null, 2)}`));
-    try {
-        promise = axios.post(
-            `http://${server}:${port}/v1/` + (type == "CHAT" ? "chat/completions" : "COMPLETIONS"),
-            data,
-            { 
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                responseType: 'stream'
-            }
-        )
-        cache.set(query, promise)
-        setTimeout(() => {
-            cache.delete(query)
-        }, 60000)
-        stream = await promise
-        stream.data.setMaxListeners(100)
-        res.writeHead(stream.status, stream.headers);
-        stream.data.pipe(res);
-        stream.data.on('data', () => {
-            tokens += 1
-        })
-        stream.data.on('error', (err) => {
-            console.error('Error in stream data stream:', err);
-            res.end();
-        });
-      
-        // Close the stream when the stream ends
-        stream.data.on('end', () => {
-            // res.end();
-            const period = new Date().getTime() - startAt
-            console.log(`tps: ${tokens / period * 1000}, tokens: ${tokens}, period: ${period/1000}, query: ${query}`)
-        });
     } catch (error) {
         console.error(error)
     }
