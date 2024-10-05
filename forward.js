@@ -185,6 +185,67 @@ app.post('/v1/completions', async (req, res) => {
     await stream_completions(req, res, "COMPLETIONS")
 });
 
+
+async function chat_completions(req, res, type) {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    data = req.body
+    let query = "";
+    if(type == "CHAT") {
+        query = data.messages[1]['content'].slice(14)
+    }
+    else {
+        let query_index = data.prompt.indexOf('Search query: ')
+        query = data.prompt.slice(query_index + 14)
+    }
+    let startAt = new Date().getTime()
+    if (cache.has(query)) {
+        console.info(ansiColors.blue(`✓ Cache hit! ${query}`))
+        const response = await cache.get(query)
+        res.json(response.data)
+        return
+    }
+    console.info(`==> ${type} ${requestId ++} / ${(new Date().getTime() - startProccessAt) / 1000}s:`, query);
+    const clientIp = req.socket.remoteAddress;
+    const ip4 = clientIp.split(":").pop();
+    console.info(ansiColors.green(`IP: ${ip4}, Headers: ${JSON.stringify(req.headers["epistula-signed-by"], null, 2)}`));
+    try {
+        promise =  axios.post(
+            `http://${server}:${port}/v2/` + (request_type == "CHAT" ? "chat/completions" : "COMPLETIONS"),
+            data,
+            { 
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            }
+        )
+        cache.set(query, promise)
+        setTimeout(() => {
+            cache.delete(query)
+        }, 60000)
+        response = await promise
+        const send_at = new Date().getTime()
+        // if (version == 1) {
+        //     for (let i = 0; i < stream.length; i++) {
+        //         res.write(stream[i])
+        //     }
+        // }
+        // if (version == 2) {
+        //     console.log("Version 2")
+        //     res.write(stream.reduce((a,b) => a+b))
+        // }
+        // res.end()
+        res.json(response.data)
+        const period = new Date().getTime() - startAt
+        const tokens = stream.length
+        const send_period = new Date().getTime() - send_at
+        console.log(`tps: ${tokens / period * 1000}, tokens: ${tokens}, period: ${period/1000}, query: ${query}, sent in ${send_period/1000} s`)
+    } catch (error) {
+        console.error(error)
+    }
+}
+
 app.post('/v2/chat/completions', async (req, res) => {
     await stream_completions(req, res, "CHAT", 2)
 });
