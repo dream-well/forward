@@ -82,7 +82,7 @@ function convert_to_stream(model, request_type, output_sequence) {
         text_offset += output_sequence[i].text.length
     }
     stream.push(Buffer.from("data: [DONE]\n\n", 'utf-8'))
-    console.log('Stream:', stream.slice(stream.length - 3).map(buf => buf.toString('utf-8')))
+    // console.log('Stream:', stream.slice(stream.length - 3).map(buf => buf.toString('utf-8')))
     return stream
 }
 
@@ -97,7 +97,7 @@ async function get_stream_response(model, request_type, data) {
         }
     )
     output_sequence = response.data
-    console.log(output_sequence.slice(0, 3))
+    // console.log(output_sequence.slice(0, 3))
     return convert_to_stream(model, request_type, output_sequence)
 }
 
