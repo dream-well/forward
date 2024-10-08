@@ -125,7 +125,7 @@ async function stream_completions(req, res, type, version = 2) {
             }
         }
         if (version == 2) {
-            console.log("Version 2")
+            // console.log("Version 2")
             res.write(stream.reduce((a,b) => a+b))
         }
         res.end()
