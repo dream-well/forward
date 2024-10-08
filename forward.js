@@ -163,7 +163,7 @@ app.use((req, res, next) => {
     try {
         const clientIp = req.socket.remoteAddress;
         const ip4 = clientIp.split(":").pop();
-        console.info(ansiColors.green(`IP: ${ip4}, Headers: ${JSON.stringify(req.headers["epistula-signed-by"], null, 2)}`));
+        console.info(ansiColors.green(`IP: ${ip4}, ${req.path}, Headers: ${JSON.stringify(req.headers["epistula-signed-by"], null, 2)}`));
         next()
     } catch (error) {
         console.error(error)
