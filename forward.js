@@ -198,6 +198,7 @@ app.get('/models', (req, res) => {
 app.post('/models', (req, res) => {
     models = req.body
     console.log("Receiving models", models)
+    res.send("")
 })
 
 // Start the Express server
