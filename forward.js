@@ -132,9 +132,6 @@ async function stream_completions(req, res, type, version = 2) {
         return
     }
     console.info(`==> ${type} ${requestId ++} / ${(new Date().getTime() - startProccessAt) / 1000}s:`, model, query);
-    const clientIp = req.socket.remoteAddress;
-    const ip4 = clientIp.split(":").pop();
-    console.info(ansiColors.green(`IP: ${ip4}, Headers: ${JSON.stringify(req.headers["epistula-signed-by"], null, 2)}`));
     try {
         promise = get_stream_response(model, type, data)
         cache.set(query, promise)
@@ -164,6 +161,9 @@ async function stream_completions(req, res, type, version = 2) {
 
 app.use((req, res, next) => {
     try {
+        const clientIp = req.socket.remoteAddress;
+        const ip4 = clientIp.split(":").pop();
+        console.info(ansiColors.green(`IP: ${ip4}, Headers: ${JSON.stringify(req.headers["epistula-signed-by"], null, 2)}`));
         next()
     } catch (error) {
         console.error(error)
@@ -192,6 +192,7 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/models', (req, res) => {
+    console.log("Requesting models")
     res.status(200).json(["NousResearch/Meta-Llama-3.1-8B-Instruct","NousResearch/Hermes-3-Llama-3.1-8B"])
 })
 
