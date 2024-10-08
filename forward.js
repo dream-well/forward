@@ -14,14 +14,7 @@ var cache = new Map();
 // Middleware to parse JSON bodies
 app.use(express.json());
 
-const servers = {
-    "east": "10.142.0.3",
-    "west": "10.168.0.5",
-    "eu": "10.156.0.3"
-}
-
-const region = process.env.REGION
-const server = servers[region]
+const server = process.env.SERVER
 
 console.log('Server IP:', server);
 
@@ -36,7 +29,7 @@ function generateId(request_type) {
     return prefix + id;
 }
 
-function convert_to_stream(request_type, output_sequence) {
+function convert_to_stream(model, request_type, output_sequence) {
     let text_offset = 0
     const id = generateId()
     const stream = []
@@ -45,7 +38,7 @@ function convert_to_stream(request_type, output_sequence) {
             "id": id, 
             "object":"chat.completion.chunk",
             "created":Math.floor((new Date()).getTime()/1000),
-            "model":"NousResearch/Meta-Llama-3.1-8B-Instruct",
+            "model":model,
             "choices":[{
                 "index":0,
                 "delta":{"role":"assistant"},
@@ -60,7 +53,7 @@ function convert_to_stream(request_type, output_sequence) {
             id: id,
             object: request_type == "CHAT" ? "chat.completion.chunk": "text_completion",
             // created: Math.floor((new Date()).getTime()/1000),
-            // model: "NousResearch/Meta-Llama-3.1-8B-Instruct",
+            // model: model,
             choices: [{
                 index: 0,
                 text: output_sequence[i].text,
@@ -93,7 +86,7 @@ function convert_to_stream(request_type, output_sequence) {
     return stream
 }
 
-async function get_stream_response(request_type, data) {
+async function get_stream_response(model, request_type, data) {
     const response = await axios.post(
         `http://${server}:${port}/v2/` + (request_type == "CHAT" ? "chat/completions" : "COMPLETIONS"),
         data,
@@ -105,7 +98,7 @@ async function get_stream_response(request_type, data) {
     )
     output_sequence = response.data
     console.log(output_sequence.slice(0, 3))
-    return convert_to_stream(request_type, output_sequence)
+    return convert_to_stream(model, request_type, output_sequence)
 }
 
 async function stream_completions(req, res, type, version = 2) {
@@ -114,6 +107,7 @@ async function stream_completions(req, res, type, version = 2) {
     res.setHeader('Connection', 'keep-alive');
     data = req.body
     let query = "";
+    let model = data.model;
     if(type == "CHAT") {
         query = data.messages[1]['content'].slice(14)
     }
@@ -137,12 +131,12 @@ async function stream_completions(req, res, type, version = 2) {
         res.end()
         return
     }
-    console.info(`==> ${type} ${requestId ++} / ${(new Date().getTime() - startProccessAt) / 1000}s:`, query);
+    console.info(`==> ${type} ${requestId ++} / ${(new Date().getTime() - startProccessAt) / 1000}s:`, model, query);
     const clientIp = req.socket.remoteAddress;
     const ip4 = clientIp.split(":").pop();
     console.info(ansiColors.green(`IP: ${ip4}, Headers: ${JSON.stringify(req.headers["epistula-signed-by"], null, 2)}`));
     try {
-        promise = get_stream_response(type, data)
+        promise = get_stream_response(model, type, data)
         cache.set(query, promise)
         setTimeout(() => {
             cache.delete(query)
