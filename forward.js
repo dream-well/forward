@@ -86,7 +86,7 @@ function convert_to_stream(model, request_type, output_sequence) {
     return stream
 }
 
-async function get_stream_response(model, request_type, data) {
+async function get_stream_response(model, request_type, data, stream) {
     const response = await axios.post(
         `http://${server}:${port}/v2/` + (request_type == "CHAT" ? "chat/completions" : "COMPLETIONS"),
         data,
@@ -98,13 +98,18 @@ async function get_stream_response(model, request_type, data) {
     )
     output_sequence = response.data
     // console.log(output_sequence.slice(0, 3))
+    if (stream == false) {
+        return output_sequence
+    }
     return convert_to_stream(model, request_type, output_sequence)
 }
 
-async function stream_completions(req, res, type, version = 2) {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
+async function stream_completions(req, res, type, stream = true) {
+    if (stream == true) {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+    }
     data = req.body
     let query = "";
     let model = data.model;
@@ -116,47 +121,29 @@ async function stream_completions(req, res, type, version = 2) {
         query = data.prompt.slice(query_index + 14)
     }
     let startAt = new Date().getTime()
+    let promise
     if (cache.has(query)) {
         console.info(ansiColors.blue(`✓ Cache hit! ${query}`))
-        const stream = await cache.get(query)
-        if (version == 1) {
-            for (let i = 0; i < stream.length; i++) {
-                res.write(stream[i])
-            }
-        }
-        if (version == 2) {
-            // console.log("Version 2")
-            res.write(stream.reduce((a,b) => a+b))
-        }
-        res.end()
-        return
-    }
-    console.info(`==> ${type} ${requestId ++} / ${(new Date().getTime() - startProccessAt) / 1000}s:`, model, query);
-    try {
-        promise = get_stream_response(model, type, data)
+        promise = cache.get(query)
+    } else {
+        console.info(`==> ${type} ${requestId ++} / ${(new Date().getTime() - startProccessAt) / 1000}s:`, model, query);
+        promise = get_stream_response(model, type, data, stream)
         cache.set(query, promise)
         setTimeout(() => {
             cache.delete(query)
         }, 60000)
-        stream = await promise
-        const send_at = new Date().getTime()
-        if (version == 1) {
-            for (let i = 0; i < stream.length; i++) {
-                res.write(stream[i])
-            }
-        }
-        if (version == 2) {
-            console.log("Version 2")
-            res.write(stream.reduce((a,b) => a+b))
-        }
-        res.end()
-        const period = new Date().getTime() - startAt
-        const tokens = stream.length
-        const send_period = new Date().getTime() - send_at
-        console.log(`tps: ${tokens / period * 1000}, tokens: ${tokens}, period: ${period/1000}, query: ${query}, sent in ${send_period/1000} s`)
-    } catch (error) {
-        console.error(error)
     }
+    stream = await promise
+
+    const period = new Date().getTime() - startAt
+    const tokens = stream.length
+    console.log(`tps: ${tokens / period * 1000}, tokens: ${tokens}, period: ${period/1000}, query: ${query}`)
+
+    if (stream == false) {
+        return res.json(stream)
+    }
+    res.write(stream.reduce((a,b) => a+b))
+    res.end()
 }
 
 app.use((req, res, next) => {
@@ -181,11 +168,11 @@ app.post('/v1/completions', async (req, res) => {
 });
 
 app.post('/v2/chat/completions', async (req, res) => {
-    await stream_completions(req, res, "CHAT", 2)
+    await stream_completions(req, res, "CHAT", false)
 });
 
 app.post('/v2/completions', async (req, res) => {
-    await stream_completions(req, res, "COMPLETIONS")
+    await stream_completions(req, res, "COMPLETIONS", false)
 });
 
 app.get('/health', (req, res) => {
