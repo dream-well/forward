@@ -133,16 +133,16 @@ async function stream_completions(req, res, type, stream = true) {
             cache.delete(query)
         }, 60000)
     }
-    stream = await promise
+    let response = await promise
 
     const period = new Date().getTime() - startAt
-    const tokens = stream.length
+    const tokens = response.length
     console.log(`tps: ${tokens / period * 1000}, tokens: ${tokens}, period: ${period/1000}, query: ${query}`)
 
     if (stream == false) {
-        return res.json(stream)
+        return res.json(response)
     }
-    res.write(stream.reduce((a,b) => a+b))
+    res.write(response.reduce((a,b) => a+b))
     res.end()
 }
 
