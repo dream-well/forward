@@ -179,9 +179,10 @@ app.get('/health', (req, res) => {
     res.status(200).send('Healthy')
 });
 
-app.get('/models', (req, res) => {
-    console.log("Requesting models")
-    res.status(200).json(["NousResearch/Meta-Llama-3.1-8B-Instruct","NousResearch/Hermes-3-Llama-3.1-8B"])
+app.get('/models', async (req, res) => {
+    const models = await axios.get(`http://${server}:${port}/models`).then(res => res.data)
+    console.log("Requesting models", models)
+    res.status(200).json(models)
 })
 
 app.post('/models', (req, res) => {
