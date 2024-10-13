@@ -49,6 +49,9 @@ function convert_to_stream(model, request_type, output_sequence) {
         stream.push(buffer)
     }
     for (let i = 0; i < output_sequence.length; i++) {
+        if( !output_sequence[i].text ) {
+            continue
+        }
         const stream_data = {
             id: id,
             object: request_type == "CHAT" ? "chat.completion.chunk": "text_completion",
@@ -57,10 +60,10 @@ function convert_to_stream(model, request_type, output_sequence) {
             choices: [{
                 index: 0,
                 text: output_sequence[i].text,
-                powv: output_sequence[i].powv,
+                // powv: output_sequence[i].powv,
                 token_ids: [output_sequence[i].token_id],
                 logprobs: {
-                    text_offset,
+                    // text_offset,
                     token_logprobs: [output_sequence[i].logprob],
                     tokens: [output_sequence[i].text],
                     top_logprobs: {[output_sequence[i].text]: output_sequence[i].logprob}
