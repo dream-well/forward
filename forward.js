@@ -123,6 +123,7 @@ async function stream_completions(req, res, type, stream = true) {
         let query_index = data.prompt.indexOf('Search query: ')
         query = data.prompt.slice(query_index + 14)
     }
+    query = `stream: ${stream}, ` + query
     let startAt = new Date().getTime()
     let promise
     if (cache.has(query)) {
