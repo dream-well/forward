@@ -60,7 +60,7 @@ function convert_to_stream(model, request_type, output_sequence) {
             choices: [{
                 index: 0,
                 text: output_sequence[i].text,
-                // powv: output_sequence[i].powv,
+                powv: output_sequence[i].powv,
                 token_ids: [output_sequence[i].token_id],
                 logprobs: {
                     // text_offset,
