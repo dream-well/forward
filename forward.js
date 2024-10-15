@@ -100,7 +100,7 @@ async function get_stream_response(model, request_type, data, stream) {
         }
     )
     output_sequence = response.data
-    // console.log(output_sequence.slice(0, 3))
+    console.log(output_sequence.slice(0, 5))
     if (stream == false) {
         return output_sequence
     }
