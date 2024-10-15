@@ -37,7 +37,7 @@ function convert_to_stream(model, request_type, output_sequence) {
         const stream_data = {
             "id": id, 
             "object":"chat.completion.chunk",
-            "created":Math.floor((new Date()).getTime()/1000),
+            // "created":Math.floor((new Date()).getTime()/1000),
             "model":model,
             "choices":[{
                 "index":0,
@@ -140,6 +140,9 @@ async function stream_completions(req, res, type, stream = true) {
 
     const period = new Date().getTime() - startAt
     const tokens = response.length
+    if (tokens < 10) {
+        console.warn(`⚠️ Low tokens: ${response} for ${query}`)
+    }
     console.log(`tps: ${tokens / period * 1000}, tokens: ${tokens}, period: ${period/1000}, query: ${query}`)
 
     if (stream == false) {
