@@ -174,7 +174,6 @@ async function stream_completions(req, res, type, version = 1) {
     }
     else if(version == 1) {
         output_stream = convert_to_stream(model, type, output_sequence).slice(first_stream.length)
-        console.log(output_stream.slice(3))
         res.write(output_stream.reduce((a,b) => a+b))
         res.end()
     }
