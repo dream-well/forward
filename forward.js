@@ -167,13 +167,14 @@ async function stream_completions(req, res, type, version = 1) {
     if (version == 2) {
         return res.json(output_sequence)
     }
-    if (version == 3) {
+    else if (version == 3) {
         res.write(JSON.stringify(output_sequence))
         res.end()
         return
     }
     else if(version == 1) {
         output_stream = convert_to_stream(model, type, output_sequence).slice(1)
+        print(output_stream.slice(2))
         res.write(output_stream.reduce((a,b) => a+b))
         res.end()
     }
