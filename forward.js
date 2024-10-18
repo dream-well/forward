@@ -149,7 +149,12 @@ async function stream_completions(req, res, type, stream = true) {
     if (stream == false) {
         return res.json(response)
     }
-    res.write(response.reduce((a,b) => a+b))
+    
+    const first_stream = response.slice(0, 10)
+    const other_stream = response.slice(10)
+    res.write(first_stream.reduce((a,b) => a+b))
+    await timer(10)
+    res.write(other_stream.reduce((a,b) => a+b))
     res.end()
 }
 
