@@ -91,25 +91,35 @@ function convert_to_stream(model, request_type, output_sequence) {
     return stream
 }
 
-async function get_stream_response(model, request_type, data, stream) {
+async function get_stream_response(request_type, data) {
     const response = await axios.post(
-        `http://${server}:${port}/v2/` + (request_type == "CHAT" ? "chat/completions" : "COMPLETIONS"),
+        `http://${server}:${port}/v3/` + (request_type == "CHAT" ? "chat/completions" : "COMPLETIONS"),
         data,
         { 
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            responseType: 'stream'
         }
     )
-    output_sequence = response.data
-    console.log(output_sequence.slice(0, 5))
-    if (stream == false) {
-        return output_sequence
-    }
-    return convert_to_stream(model, request_type, output_sequence)
+    const time = new Date().getTime()
+    return new Promise((resolve) => {
+        let output_sequence = []
+        let first_sequence = []
+        let all_promise = new Promise((all_resolve) => {
+            response.data.on('data', (chunk) => {
+                if(first_sequence.length == 0) {
+                    first_sequence = JSON.parse(chunk.toString())
+                    console.log(`first token in ${new Date().getTime() - time}ms`, first_sequence)
+                    resolve([first_sequence, all_promise])
+                }
+                else {
+                    output_sequence = JSON.parse(chunk.toString())
+                    all_resolve(output_sequence)
+                }
+            })
+        })
+    })
 }
 
-async function stream_completions(req, res, type, stream = true) {
+async function stream_completions(req, res, type, version = 1) {
     if (stream == true) {
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
@@ -125,7 +135,7 @@ async function stream_completions(req, res, type, stream = true) {
         let query_index = data.prompt.indexOf('Search query: ')
         query = data.prompt.slice(query_index + 14)
     }
-    query = `stream: ${stream}, ` + query
+    query = `version: ${version}, ` + query
     let startAt = new Date().getTime()
     let promise
     if (cache.has(query)) {
@@ -133,42 +143,39 @@ async function stream_completions(req, res, type, stream = true) {
         promise = cache.get(query)
     } else {
         console.info(`==> ${type} ${requestId ++} / ${(new Date().getTime() - startProccessAt) / 1000}s:`, model, query);
-        promise = get_stream_response(model, type, data, stream)
+        promise = get_stream_response(type, data)
         cache.set(query, promise)
         setTimeout(() => {
             cache.delete(query)
         }, 60000)
     }
     let response = await promise
+    let [first_sequence, all_promise] = response
 
+    if (version == 3) {
+        res.write(JSON.stringify(first_sequence))
+    }
+    else if(version == 1) {
+        first_stream = convert_to_stream(model, type, first_sequence)
+        res.write(first_stream.reduce((a,b) => a+b))
+    }
+    let output_sequence = await all_promise
+    if (version == 2) {
+        return res.json(output_sequence)
+    }
+    if (version == 3) {
+        res.write(JSON.stringify(output_sequence))
+        res.end()
+        return
+    }
+    else if(version == 1) {
+        output_stream = convert_to_stream(model, type, output_sequence).slice(1)
+        res.write(output_stream.reduce((a,b) => a+b))
+        res.end()
+    }
     const period = new Date().getTime() - startAt
-    const tokens = response.length
-    if (tokens < 10) {
-        console.warn(`⚠️ Low tokens: ${response} for ${query}`)
-    }
+    const tokens = output_sequence.length
     console.log(`tps: ${tokens / period * 1000}, tokens: ${tokens}, period: ${period/1000}, query: ${query}`)
-
-    if (stream == false) {
-        return res.json(response)
-    }
-    
-    const first_stream = response.slice(0, 1)
-    const other_stream = response.slice(1)
-    res.write(first_stream.reduce((a,b) => a+b))
-    if(other_stream.length < 300) {
-        await timer(800)
-    }
-    else if(other_stream.length < 800) {
-        await timer(600)
-    }
-    else if(other_stream.length < 1600) {
-        await timer(400)
-    }
-    else {
-        await timer(200)
-    }
-    res.write(other_stream.reduce((a,b) => a+b))
-    res.end()
 }
 
 app.use((req, res, next) => {
@@ -185,19 +192,27 @@ app.use((req, res, next) => {
 })
 
 app.post('/v1/chat/completions', async (req, res) => {
-    await stream_completions(req, res, "CHAT")
+    await stream_completions(req, res, "CHAT", 1)
 });
 
 app.post('/v1/completions', async (req, res) => {
-    await stream_completions(req, res, "COMPLETIONS")
+    await stream_completions(req, res, "COMPLETIONS", 1)
 });
 
 app.post('/v2/chat/completions', async (req, res) => {
-    await stream_completions(req, res, "CHAT", false)
+    await stream_completions(req, res, "CHAT", 2)
 });
 
 app.post('/v2/completions', async (req, res) => {
-    await stream_completions(req, res, "COMPLETIONS", false)
+    await stream_completions(req, res, "COMPLETIONS", 2)
+});
+
+app.post('/v3/chat/completions', async (req, res) => {
+    await stream_completions(req, res, "CHAT", 3)
+});
+
+app.post('/v3/completions', async (req, res) => {
+    await stream_completions(req, res, "COMPLETIONS", 3)
 });
 
 app.get('/health', (req, res) => {
