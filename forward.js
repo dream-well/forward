@@ -105,20 +105,20 @@ async function get_stream_response(request_type, data) {
         let first_sequence = []
         let output = ""
         let all_promise = new Promise((all_resolve) => {
-            response.data.on('data', (chunk) => {
-                if(first_sequence.length == 0) {
-                    first_sequence = JSON.parse(chunk.toString())
-                    console.log(`first token in ${new Date().getTime() - time}ms`, first_sequence)
-                    resolve([first_sequence, all_promise])
-                }
-                else {
-                    output += chunk.toString()
-                }
-            })
             response.data.on('end', () => {
                 output_sequence = JSON.parse(output)
                 all_resolve(output_sequence)
             })
+        })
+        response.data.on('data', (chunk) => {
+            if(first_sequence.length == 0) {
+                first_sequence = JSON.parse(chunk.toString())
+                console.log(`first token in ${new Date().getTime() - time}ms`, first_sequence)
+                resolve([first_sequence, all_promise])
+            }
+            else {
+                output += chunk.toString()
+            }
         })
     })
 }
