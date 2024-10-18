@@ -155,10 +155,13 @@ async function stream_completions(req, res, type, stream = true) {
     const first_stream = response.slice(0, 1)
     const other_stream = response.slice(1)
     res.write(first_stream.reduce((a,b) => a+b))
-    if(other_stream.length < 600) {
+    if(other_stream.length < 300) {
         await timer(800)
     }
-    else if(other_stream.length < 1200) {
+    else if(other_stream.length < 800) {
+        await timer(600)
+    }
+    else if(other_stream.length < 1600) {
         await timer(400)
     }
     else {
