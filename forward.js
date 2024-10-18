@@ -155,12 +155,12 @@ async function stream_completions(req, res, type, version = 1) {
     }
     let response = await promise
     let [first_sequence, all_promise] = response
-
+    let first_stream = []
     if (version == 3) {
         res.write(JSON.stringify(first_sequence))
     }
     else if(version == 1) {
-        first_stream = convert_to_stream(model, type, first_sequence)
+        first_stream = convert_to_stream(model, type, first_sequence).slice(0, -1)
         res.write(first_stream.reduce((a,b) => a+b))
     }
     let output_sequence = await all_promise
@@ -173,8 +173,8 @@ async function stream_completions(req, res, type, version = 1) {
         return
     }
     else if(version == 1) {
-        output_stream = convert_to_stream(model, type, output_sequence).slice(1)
-        print(output_stream.slice(2))
+        output_stream = convert_to_stream(model, type, output_sequence).slice(first_stream.length)
+        console.log(output_stream.slice(3))
         res.write(output_stream.reduce((a,b) => a+b))
         res.end()
     }
