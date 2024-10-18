@@ -111,6 +111,7 @@ async function get_stream_response(request_type, data) {
                     resolve([first_sequence, all_promise])
                 }
                 else {
+                    console.log(chunk.toString())
                     output_sequence = JSON.parse(chunk.toString())
                     all_resolve(output_sequence)
                 }
