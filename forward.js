@@ -63,7 +63,7 @@ function convert_to_stream(model, request_type, output_sequence) {
                 powv: output_sequence[i].powv,
                 token_ids: [output_sequence[i].token_id],
                 logprobs: {
-                    // text_offset,
+                    text_offset,
                     token_logprobs: [output_sequence[i].logprob],
                     tokens: [output_sequence[i].text],
                     top_logprobs: {[output_sequence[i].text]: output_sequence[i].logprob}
@@ -150,10 +150,9 @@ async function stream_completions(req, res, type, stream = true) {
         return res.json(response)
     }
     
-    const first_stream = response.slice(0, 10)
-    const other_stream = response.slice(10)
+    const first_stream = response.slice(0, 20)
+    const other_stream = response.slice(20)
     res.write(first_stream.reduce((a,b) => a+b))
-    await timer(10)
     res.write(other_stream.reduce((a,b) => a+b))
     res.end()
 }
