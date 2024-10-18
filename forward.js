@@ -103,6 +103,7 @@ async function get_stream_response(request_type, data) {
     return new Promise((resolve) => {
         let output_sequence = []
         let first_sequence = []
+        let output = ""
         let all_promise = new Promise((all_resolve) => {
             response.data.on('data', (chunk) => {
                 if(first_sequence.length == 0) {
@@ -111,10 +112,12 @@ async function get_stream_response(request_type, data) {
                     resolve([first_sequence, all_promise])
                 }
                 else {
-                    console.log(chunk.toString())
-                    output_sequence = JSON.parse(chunk.toString())
-                    all_resolve(output_sequence)
+                    output += chunk.toString()
                 }
+            })
+            response.data.on('end', () => {
+                output_sequence = JSON.parse(output)
+                all_resolve(output_sequence)
             })
         })
     })
