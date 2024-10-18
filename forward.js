@@ -161,6 +161,9 @@ async function stream_completions(req, res, type, stream = true) {
     else if(other_stream.length < 1000) {
         await timer(300)
     }
+    else {
+        await timer(100)
+    }
     res.write(other_stream.reduce((a,b) => a+b))
     res.end()
 }
