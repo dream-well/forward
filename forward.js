@@ -120,7 +120,7 @@ async function get_stream_response(request_type, data) {
 }
 
 async function stream_completions(req, res, type, version = 1) {
-    if (stream == true) {
+    if (version == 1 || version == 3) {
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
