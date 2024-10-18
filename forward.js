@@ -5,6 +5,8 @@ const ansiColors = require('ansi-colors');
 const dotenv = require('dotenv');
 const crypto = require('crypto');
 
+const timer = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 dotenv.config()
 
 console.log('Server Location:', ansiColors.yellow(process.env.REGION));
@@ -153,6 +155,9 @@ async function stream_completions(req, res, type, stream = true) {
     const first_stream = response.slice(0, 1)
     const other_stream = response.slice(1)
     res.write(first_stream.reduce((a,b) => a+b))
+    if(other_stream.length < 400) {
+        await timer(100)
+    }
     res.write(other_stream.reduce((a,b) => a+b))
     res.end()
 }
