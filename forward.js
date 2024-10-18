@@ -150,8 +150,8 @@ async function stream_completions(req, res, type, stream = true) {
         return res.json(response)
     }
     
-    const first_stream = response.slice(0, 20)
-    const other_stream = response.slice(20)
+    const first_stream = response.slice(0, 1)
+    const other_stream = response.slice(1)
     res.write(first_stream.reduce((a,b) => a+b))
     res.write(other_stream.reduce((a,b) => a+b))
     res.end()
