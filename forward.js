@@ -174,7 +174,10 @@ async function stream_completions(req, res, type, version = 1) {
     }
     else if(version == 1) {
         output_stream = convert_to_stream(model, type, output_sequence).slice(first_stream.length)
-        res.write(output_stream.reduce((a,b) => a+b))
+        const output_5th = output_stream.slice(0, output_stream.length * 0.05 + 3)
+        res.write(output_5th.reduce((a,b) => a+b))
+        const rest_stream = output_stream.slice(output_5th.length)
+        res.write(rest_stream.reduce((a,b) => a+b))
         res.end()
     }
     const period = new Date().getTime() - startAt
