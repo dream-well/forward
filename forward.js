@@ -179,7 +179,9 @@ async function stream_completions(req, res, type, version = 1) {
         res.write(output_5th.reduce((a,b) => a+b))
         const spent = (new Date().getTime() - startAt)
         const end_time = spent * 0.25
-        const wait_time = Math.max(end_time - (rest_stream.length + 100), 10) * 1.25
+        let wait_time = Math.max(end_time - (rest_stream.length + 100), 10) * 2
+        if(rest_stream.length < 300)
+            wait_time = Math.max(wait_time, 500)
         await timer(wait_time)
         console.log(`Spent: ${spent} ms, End time: ${end_time} ms, Wait: ${wait_time} ms, Length: ${rest_stream.length}`)
         res.write(rest_stream.reduce((a,b) => a+b))
