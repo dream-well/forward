@@ -174,17 +174,22 @@ async function stream_completions(req, res, type, version = 1) {
     }
     else if(version == 1) {
         output_stream = convert_to_stream(model, type, output_sequence).slice(first_stream.length)
-        const output_5th = output_stream.slice(0, output_stream.length * 0.05 + 3)
-        const rest_stream = output_stream.slice(output_5th.length)
-        res.write(output_5th.reduce((a,b) => a+b))
-        const spent = (new Date().getTime() - startAt)
-        const end_time = spent * 0.25
-        let wait_time = Math.max(end_time - (rest_stream.length + 100), 10) * 2
-        if(rest_stream.length < 300)
-            wait_time = Math.max(wait_time, 500)
-        await timer(wait_time)
-        console.log(`Spent: ${spent} ms, End time: ${end_time} ms, Wait: ${wait_time} ms, Length: ${rest_stream.length}`)
-        res.write(rest_stream.reduce((a,b) => a+b))
+        // const output_5th = output_stream.slice(0, output_stream.length * 0.05 + 3)
+        // const rest_stream = output_stream.slice(output_5th.length)
+        // res.write(output_5th.reduce((a,b) => a+b))
+        // const spent = (new Date().getTime() - startAt)
+        // const end_time = spent * 0.25
+        // let wait_time = Math.max(end_time - (rest_stream.length + 100), 10) * 2
+        // if(rest_stream.length < 300)
+        //     wait_time = Math.max(wait_time, 500)
+        // await timer(wait_time)
+        // console.log(`Spent: ${spent} ms, End time: ${end_time} ms, Wait: ${wait_time} ms, Length: ${rest_stream.length}`)
+        // res.write(rest_stream.reduce((a,b) => a+b))
+        // res.end()
+        console.log("last output", output_stream.slice(-3))
+        for (let i = 0; i < output_stream.length; i++) {
+            res.write(output_stream[i])
+        }
         res.end()
     }
     const period = new Date().getTime() - startAt
