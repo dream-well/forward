@@ -186,7 +186,7 @@ async function stream_completions(req, res, type, version = 1) {
         // console.log(`Spent: ${spent} ms, End time: ${end_time} ms, Wait: ${wait_time} ms, Length: ${rest_stream.length}`)
         // res.write(rest_stream.reduce((a,b) => a+b))
         // res.end()
-        console.log("last output", output_stream.slice(-3).map(each => each.toString('utf-8')))
+        console.log("last output", output_sequence.slice(-3))
         for (let i = 0; i < output_stream.length; i++) {
             res.write(output_stream[i])
         }
