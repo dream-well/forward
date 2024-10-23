@@ -125,8 +125,9 @@ async function stream_completions(req, res, type, version = 1) {
         eventEmitter = cache.get(query)
     } else {
         console.info(`==> ${type} ${requestId ++} / ${(new Date().getTime() - startProccessAt) / 1000}s:`, model, query);
-        eventEmitter = get_stream_response(type, data)
-        cache.set(query, eventEmitter)
+        promise = get_stream_response(type, data)
+        cache.set(query, promise)
+        eventEmitter = await promise
         setTimeout(() => {
             cache.delete(query)
         }, 60000)
