@@ -124,7 +124,7 @@ async function stream_completions(req, res, type, version = 1) {
         const responses = cache.get(query)
         index = 0
         timeout = 10
-        while((new Date().getTime() - start_at) / 1000 < timeout) {
+        while((new Date().getTime() - startAt) / 1000 < timeout) {
             if(responses.length > index) {
                 if (responses.length == index) {
                     await timer(1)
