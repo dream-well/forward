@@ -162,10 +162,16 @@ async function stream_completions(req, res, type, version = 1) {
     }, 60000)
     let output_sequence = []
     for await (const data of stream) {
-        const outputs = JSON.parse(data)
+
+        let outputs = []
+        try {
+            outputs = JSON.parse(data)
+        } catch (error) {
+            console.error("Error parsing JSON", data)
+        }
         responses.push(outputs)
         if(version == 1) {
-            data_to_stream = convert_to_stream(model, type, outputs, output_sequence.length == 0, false)
+            let data_to_stream = convert_to_stream(model, type, outputs, output_sequence.length == 0, false)
             res.write(data_to_stream.reduce((a,b) => a + b, Buffer.from("", 'utf-8')))
         }
         else {
