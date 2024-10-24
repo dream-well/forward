@@ -156,7 +156,7 @@ async function stream_completions(req, res, type, version = 1) {
     console.info(`==> ${type} ${requestId ++} / ${(new Date().getTime() - startProccessAt) / 1000}s:`, model, query);
     const responses = []
     cache.set(query, responses)
-    stream = get_stream_response(type, data)
+    stream = await get_stream_response(type, data)
     setTimeout(() => {
         cache.delete(query)
     }, 60000)
