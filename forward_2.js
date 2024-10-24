@@ -156,14 +156,12 @@ async function stream_completions(req, res, type, version = 1) {
     console.info(`==> ${type} ${requestId ++} / ${(new Date().getTime() - startProccessAt) / 1000}s:`, model, query);
     const responses = []
     cache.set(query, responses)
-    promise = get_stream_response(type, data)
-    const eventEmitter = await promise
+    stream = get_stream_response(type, data)
     setTimeout(() => {
         cache.delete(query)
     }, 60000)
     let output_sequence = []
-    eventEmitter.on('data', function(data) {
-        console.log(data.toString())
+    for await (const data of stream) {
         const outputs = JSON.parse(data)
         responses.push(outputs)
         if(version == 1) {
@@ -174,17 +172,15 @@ async function stream_completions(req, res, type, version = 1) {
             res.write(JSON.stringify(outputs))
         }
         output_sequence.push(...outputs)
-    })
-    eventEmitter.on('end', function() {
-        responses.push('END')
-        if(version == 1){
-            res.write(Buffer.from("data: [DONE]\n\n", 'utf-8'))
-        }
-        res.end()
-        const period = new Date().getTime() - startAt
-        const tokens = output_sequence.length
-        console.log(`tps: ${tokens / period * 1000}, tokens: ${tokens}, period: ${period/1000}, query: ${query}`)
-    })
+    }
+    responses.push('END')
+    if(version == 1){
+        res.write(Buffer.from("data: [DONE]\n\n", 'utf-8'))
+    }
+    res.end()
+    const period = new Date().getTime() - startAt
+    const tokens = output_sequence.length
+    console.log(`tps: ${tokens / period * 1000}, tokens: ${tokens}, period: ${period/1000}, query: ${query}`)
 }
 
 app.use((req, res, next) => {
