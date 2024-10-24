@@ -159,6 +159,7 @@ async function stream_completions(req, res, type, version = 1) {
     }, 60000)
     let output_sequence = []
     eventEmitter.on('data', function(data) {
+        console.log(data.toString())
         const outputs = JSON.parse(data)
         responses.push(outputs)
         if(version == 1) {
