@@ -124,18 +124,18 @@ async function stream_completions(req, res, type, version = 1) {
         const responses = cache.get(query)
         index = 0
         timeout = 10
+        let tokens = 0
         while((new Date().getTime() - startAt) / 1000 < timeout) {
             if(responses.length > index) {
                 if (responses.length == index) {
                     await timer(1)
                     continue
                 }
-                let tokens = 0
                 for (; index < responses.length; index++) {
+                    tokens += responses[index].length
                     if(responses[index] == 'END') {
                         res.end()
                         const period = new Date().getTime() - startAt
-                        tokens += responses[index].length
                         console.log(`tps: ${tokens / period * 1000}, tokens: ${tokens}, period: ${period/1000}, query: ${query}`)
                         return
                     }
@@ -145,7 +145,7 @@ async function stream_completions(req, res, type, version = 1) {
                     }
                     else {
                         res.write(JSON.stringify(responses[index]))
-                    }            
+                    }
                 }
             }
         }
