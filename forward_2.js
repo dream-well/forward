@@ -69,7 +69,6 @@ function convert_to_stream(model, request_type, output_sequence, is_first = fals
                     tokens: [`token_id:${output_sequence[i].token_id}`],
                     // text_offset,
                     token_logprobs: [output_sequence[i].logprob],
-                    tokens: [output_sequence[i].text],
                     top_logprobs: {[output_sequence[i].text]: output_sequence[i].logprob}
                 }
             }]
