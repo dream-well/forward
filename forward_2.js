@@ -163,7 +163,7 @@ async function stream_completions(req, res, type, version = 1) {
 
         let outputs = []
         try {
-            outputs = JSON.parse(data)
+            outputs = JSON.parse(data.toString())
         } catch (error) {
             console.error("Error parsing JSON", data)
         }
