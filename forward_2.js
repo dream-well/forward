@@ -158,7 +158,7 @@ async function stream_completions(req, res, type, version = 1) {
         cache.delete(query)
     }, 60000)
     let output_sequence = []
-    eventEmitter.on('data', (data) => {
+    eventEmitter.on('data', function(data) {
         const outputs = JSON.parse(data)
         responses.push(outputs)
         if(version == 1) {
@@ -170,7 +170,7 @@ async function stream_completions(req, res, type, version = 1) {
         }
         output_sequence.push(...outputs)
     })
-    eventEmitter.on('end', () => {
+    eventEmitter.on('end', function() {
         responses.push('END')
         if(version == 1){
             res.write(Buffer.from("data: [DONE]\n\n", 'utf-8'))
