@@ -122,7 +122,7 @@ async function stream_completions(req, res, type, version = 1) {
     let eventEmitter
     if (cache.has(query)) {
         console.info(ansiColors.blue(`✓ Cache hit! ${query}`))
-        eventEmitter = cache.get(query)
+        eventEmitter = await cache.get(query)
     } else {
         console.info(`==> ${type} ${requestId ++} / ${(new Date().getTime() - startProccessAt) / 1000}s:`, model, query);
         promise = get_stream_response(type, data)
