@@ -98,7 +98,7 @@ async function get_stream_response(request_type, data) {
             responseType: 'stream'
         }
     )
-    return response.data
+    return JSON.parse(response.data)
 }
 
 async function stream_completions(req, res, type, version = 1) {
