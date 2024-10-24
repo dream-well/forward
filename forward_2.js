@@ -119,14 +119,39 @@ async function stream_completions(req, res, type, version = 1) {
     }
     query = `version: ${version}, ` + query
     let startAt = new Date().getTime()
-    let eventEmitter
     if (cache.has(query)) {
         console.info(ansiColors.blue(`✓ Cache hit! ${query}`))
-        eventEmitter = await cache.get(query)
+        const responses = cache.get(query)
+        index = 0
+        timeout = 10
+        while((new Date().getTime() - start_at) / 1000 < timeout) {
+            if(responses.length > index) {
+                if (responses.length == index) {
+                    await timer(1)
+                    continue
+                }
+                for (; index < responses.length; index++) {
+                    if(responses[index] == 'END') {
+                        res.end()
+                        return
+                    }
+                    if(version == 1) {
+                        data_to_stream = convert_to_stream(model, type, responses[index], index == 0, false)
+                        res.write(data_to_stream.reduce((a,b) => a + b, Buffer.from("", 'utf-8')))
+                    }
+                    else {
+                        res.write(JSON.stringify(responses[index]))
+                    }            
+                }
+            }
+        }
+        console.warn("Timeout")
+        res.end()
     } else {
         console.info(`==> ${type} ${requestId ++} / ${(new Date().getTime() - startProccessAt) / 1000}s:`, model, query);
+        const responses = []
+        cache.set(query, responses)
         promise = get_stream_response(type, data)
-        cache.set(query, promise)
         eventEmitter = await promise
         setTimeout(() => {
             cache.delete(query)
@@ -135,6 +160,7 @@ async function stream_completions(req, res, type, version = 1) {
     let output_sequence = []
     eventEmitter.on('data', (data) => {
         const outputs = JSON.parse(data)
+        responses.push(outputs)
         if(version == 1) {
             data_to_stream = convert_to_stream(model, type, outputs, output_sequence.length == 0, false)
             res.write(data_to_stream.reduce((a,b) => a + b, Buffer.from("", 'utf-8')))
@@ -145,6 +171,7 @@ async function stream_completions(req, res, type, version = 1) {
         output_sequence.push(...outputs)
     })
     eventEmitter.on('end', () => {
+        responses.push('END')
         if(version == 1){
             res.write(Buffer.from("data: [DONE]\n\n", 'utf-8'))
         }
