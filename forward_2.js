@@ -98,7 +98,7 @@ async function get_stream_response(request_type, data) {
             responseType: 'stream'
         }
     )
-    return JSON.parse(response.data)
+    return response.data
 }
 
 async function stream_completions(req, res, type, version = 1) {
@@ -133,7 +133,8 @@ async function stream_completions(req, res, type, version = 1) {
         }, 60000)
     }
     let output_sequence = []
-    eventEmitter.on('data', (outputs) => {
+    eventEmitter.on('data', (data) => {
+        const outputs = JSON.parse(data)
         if(version == 1) {
             data_to_stream = convert_to_stream(model, type, outputs, output_sequence.length == 0, false)
             res.write(data_to_stream.reduce((a,b) => a + b, ""))
