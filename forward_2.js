@@ -126,26 +126,24 @@ async function stream_completions(req, res, type, version = 1) {
         timeout = 10
         let tokens = 0
         while((new Date().getTime() - startAt) / 1000 < timeout) {
-            if(responses.length > index) {
-                if (responses.length == index) {
-                    await timer(1)
-                    continue
+            if (responses.length == index) {
+                await timer(1)
+                continue
+            }
+            for (; index < responses.length; index++) {
+                tokens += responses[index].length
+                if(responses[index] == 'END') {
+                    res.end()
+                    const period = new Date().getTime() - startAt
+                    console.log(`tps: ${tokens / period * 1000}, tokens: ${tokens}, period: ${period/1000}, query: ${query}`)
+                    return
                 }
-                for (; index < responses.length; index++) {
-                    tokens += responses[index].length
-                    if(responses[index] == 'END') {
-                        res.end()
-                        const period = new Date().getTime() - startAt
-                        console.log(`tps: ${tokens / period * 1000}, tokens: ${tokens}, period: ${period/1000}, query: ${query}`)
-                        return
-                    }
-                    if(version == 1) {
-                        data_to_stream = convert_to_stream(model, type, responses[index], index == 0, false)
-                        res.write(data_to_stream.reduce((a,b) => a + b, Buffer.from("", 'utf-8')))
-                    }
-                    else {
-                        res.write(JSON.stringify(responses[index]))
-                    }
+                if(version == 1) {
+                    data_to_stream = convert_to_stream(model, type, responses[index], index == 0, false)
+                    res.write(data_to_stream.reduce((a,b) => a + b, Buffer.from("", 'utf-8')))
+                }
+                else {
+                    res.write(JSON.stringify(responses[index]))
                 }
             }
         }
