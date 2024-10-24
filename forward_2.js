@@ -66,7 +66,8 @@ function convert_to_stream(model, request_type, output_sequence, is_first = fals
                 // powv: output_sequence[i].powv,
                 token_ids: [output_sequence[i].token_id],
                 logprobs: {
-                    text_offset,
+                    tokens: [`token_id:${output_sequence[i].token_id}`],
+                    // text_offset,
                     token_logprobs: [output_sequence[i].logprob],
                     tokens: [output_sequence[i].text],
                     top_logprobs: {[output_sequence[i].text]: output_sequence[i].logprob}
@@ -78,7 +79,7 @@ function convert_to_stream(model, request_type, output_sequence, is_first = fals
                 content: output_sequence[i].text,
             }
             stream_data.choices[0].logprobs['content'] = [{
-                "token": output_sequence[i].text,
+                "token": `token_id:${output_sequence[i].token_id}`,
                 "logprob": output_sequence[i].logprob,
             }]
         }
