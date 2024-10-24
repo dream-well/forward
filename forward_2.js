@@ -122,7 +122,7 @@ async function stream_completions(req, res, type, version = 1) {
     if (cache.has(query)) {
         console.info(ansiColors.blue(`✓ Cache hit! ${query}`))
         const responses = cache.get(query)
-        index = 0
+        let index = 0
         timeout = 10
         let tokens = 0
         while((new Date().getTime() - startAt) / 1000 < timeout) {
